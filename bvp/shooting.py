@@ -5,6 +5,7 @@ Robin.initial_values). Each method looks for the t that makes the
 residual of the right condition, F(t), vanish.
 """
 
+import functools
 from dataclasses import dataclass, field
 
 import numpy as np
@@ -21,6 +22,15 @@ class ShootingResult:
     iterations: int
     converged: bool
     history: list = field(default_factory=list)  # [(t_k, F(t_k)), ...]
+
+
+def _quiet_overflow(fun):
+    """Silence overflow warnings: a shot that blows up returns inf/nan."""
+    @functools.wraps(fun)
+    def wrapper(*args):
+        with np.errstate(over="ignore", invalid="ignore"):
+            return fun(*args)
+    return wrapper
 
 
 def _result(x, u, t, iterations, converged, history):
@@ -53,3 +63,34 @@ def linear_shooting(p, q, r, a, b, left, right, n=10):
     w = u + t * v
     return _result(x, w, t, 1, True,
                    [(t, right.residual(w[-1, 0], w[-1, 1]))])
+
+
+def secant_shooting(f, a, b, left, right, t0, t1, n=10, tol=1e-6,
+                    max_iter=50):
+    """Nonlinear shooting with the secant method.
+
+    Stops when |F(t_k)| < tol. Iterations counts secant updates.
+    """
+    def system(x, w):
+        return np.array([w[1], f(x, w[0], w[1])])
+
+    @_quiet_overflow
+    def evaluate(t):
+        init, _ = left.initial_values(t)
+        x, u = rk4(system, a, b, np.array(init), n)
+        return right.residual(u[-1, 0], u[-1, 1]), x, u
+
+    t_prev, t = t0, t1
+    F_prev, _, _ = evaluate(t_prev)
+    F, x, u = evaluate(t)
+    history = [(t_prev, F_prev), (t, F)]
+    iterations = 0
+    while abs(F) >= tol and iterations < max_iter:
+        if not np.isfinite(F) or F == F_prev:
+            break
+        t_prev, t = t, t - F * (t - t_prev) / (F - F_prev)
+        F_prev = F
+        F, x, u = evaluate(t)
+        history.append((t, F))
+        iterations += 1
+    return _result(x, u, t, iterations, bool(abs(F) < tol), history)
