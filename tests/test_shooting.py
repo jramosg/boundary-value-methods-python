@@ -28,7 +28,7 @@ def burden_f_dy(x, y, dy):
     return -y / 8
 
 
-# y'' = -(y')^2, y(0) + y'(0) = 1, y(1) - y'(1) = ln 2 - 1/2,
+# y'' = -(y')^2, y'(0) + y(0) = 1, -y'(1) + y(1) = ln 2 - 1/2,
 # y = ln(1 + x), unique solution
 def log_f(x, y, dy):
     return -dy**2
@@ -43,7 +43,7 @@ def log_f_dy(x, y, dy):
 
 
 LOG_LEFT = Robin(1, 1, 1)
-LOG_RIGHT = Robin(1, -1, np.log(2) - 0.5)
+LOG_RIGHT = Robin(-1, 1, np.log(2) - 0.5)
 
 
 def test_linear_shooting_dirichlet():
@@ -54,10 +54,10 @@ def test_linear_shooting_dirichlet():
 
 
 def test_linear_shooting_robin():
-    # y'' = -y, y(0) + y'(0) = 2, 2 y(pi/2) + y'(pi/2) = 1,
+    # y'' = -y, y'(0) + y(0) = 2, y'(pi/2) + 2 y(pi/2) = 1,
     # y = sin x + cos x
     res = linear_shooting(lambda x: 0, lambda x: -1, lambda x: 0,
-                          0, np.pi / 2, Robin(1, 1, 2), Robin(2, 1, 1),
+                          0, np.pi / 2, Robin(1, 1, 2), Robin(1, 2, 1),
                           n=10)
     exact = np.sin(res.x) + np.cos(res.x)
     assert np.max(np.abs(res.y - exact)) < 1e-5
@@ -108,8 +108,8 @@ def test_divergent_start_reports_failure():
 
 
 def test_two_solutions_depend_on_start():
-    # With 2 y(1) + y'(1) = 2 ln 2 + 1/2 the problem has two solutions
-    right = Robin(2, 1, 2 * np.log(2) + 0.5)
+    # With y'(1) + 2 y(1) = 2 ln 2 + 1/2 the problem has two solutions
+    right = Robin(1, 2, 2 * np.log(2) + 0.5)
     near_zero = newton_shooting(log_f, log_f_y, log_f_dy, 0, 1, LOG_LEFT,
                                 right, 0.5)
     other = newton_shooting(log_f, log_f_y, log_f_dy, 0, 1, LOG_LEFT,

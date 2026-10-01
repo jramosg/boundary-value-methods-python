@@ -39,11 +39,12 @@ def _result(x, u, t, iterations, converged, history):
 
 
 def linear_shooting(p, q, r, a, b, left, right, n=10):
-    """Solve y'' = p(x) y' + q(x) y + r(x) with Robin conditions.
+    """Solve y'' = p(x) y' + q(x) y + r(x) with natural conditions.
 
-    The problem is linear, so y(x; t) = u(x) + t v(x) and F(t) is affine:
-    one solve of the full equation (u) and one of the homogeneous
-    equation (v) give the exact t.
+    The solution is y = y1 + s y2, where y1 solves the full equation and
+    y2 the homogeneous one, with initial data from
+    Robin.linear_initial_values. The right condition is affine in s, so
+    it gives s directly. The result stores s in its t field.
     """
     def full(x, w):
         return np.array([w[1], p(x) * w[1] + q(x) * w[0] + r(x)])
@@ -51,18 +52,18 @@ def linear_shooting(p, q, r, a, b, left, right, n=10):
     def homogeneous(x, w):
         return np.array([w[1], p(x) * w[1] + q(x) * w[0]])
 
-    u_init, v_init = left.initial_values(0.0)
-    x, u = rk4(full, a, b, np.array(u_init), n)
-    _, v = rk4(homogeneous, a, b, np.array(v_init), n)
+    y1_init, y2_init = left.linear_initial_values()
+    x, y1 = rk4(full, a, b, np.array(y1_init), n)
+    _, y2 = rk4(homogeneous, a, b, np.array(y2_init), n)
 
-    slope = right.alpha * v[-1, 0] + right.beta * v[-1, 1]
+    slope = right.alpha * y2[-1, 1] + right.beta * y2[-1, 0]
     if slope == 0:
         raise ValueError("the boundary value problem has no unique "
                          "solution")
-    t = -right.residual(u[-1, 0], u[-1, 1]) / slope
-    w = u + t * v
-    return _result(x, w, t, 1, True,
-                   [(t, right.residual(w[-1, 0], w[-1, 1]))])
+    s = -right.residual(y1[-1, 0], y1[-1, 1]) / slope
+    w = y1 + s * y2
+    return _result(x, w, s, 1, True,
+                   [(s, right.residual(w[-1, 0], w[-1, 1]))])
 
 
 def secant_shooting(f, a, b, left, right, t0, t1, n=10, tol=1e-6,
@@ -115,7 +116,7 @@ def newton_shooting(f, f_y, f_dy, a, b, left, right, t0, n=10, tol=1e-6,
         (y0, dy0), (z0, dz0) = left.initial_values(t)
         x, w = rk4(system, a, b, np.array([y0, dy0, z0, dz0]), n)
         F = right.residual(w[-1, 0], w[-1, 1])
-        dF = right.alpha * w[-1, 2] + right.beta * w[-1, 3]
+        dF = right.alpha * w[-1, 3] + right.beta * w[-1, 2]
         return F, dF, x, w
 
     t = t0
