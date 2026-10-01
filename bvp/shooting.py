@@ -94,3 +94,39 @@ def secant_shooting(f, a, b, left, right, t0, t1, n=10, tol=1e-6,
         history.append((t, F))
         iterations += 1
     return _result(x, u, t, iterations, bool(abs(F) < tol), history)
+
+
+def newton_shooting(f, f_y, f_dy, a, b, left, right, t0, n=10, tol=1e-6,
+                    max_iter=50):
+    """Nonlinear shooting with Newton's method.
+
+    F'(t) comes from the variational equation for z = dy/dt,
+        z'' = f_y(x, y, y') z + f_dy(x, y, y') z',
+    integrated together with the original equation.
+    Stops when |F(t_k)| < tol. Iterations counts Newton updates.
+    """
+    def system(x, w):
+        y, dy, z, dz = w
+        return np.array([dy, f(x, y, dy),
+                         dz, f_y(x, y, dy) * z + f_dy(x, y, dy) * dz])
+
+    @_quiet_overflow
+    def evaluate(t):
+        (y0, dy0), (z0, dz0) = left.initial_values(t)
+        x, w = rk4(system, a, b, np.array([y0, dy0, z0, dz0]), n)
+        F = right.residual(w[-1, 0], w[-1, 1])
+        dF = right.alpha * w[-1, 2] + right.beta * w[-1, 3]
+        return F, dF, x, w
+
+    t = t0
+    F, dF, x, w = evaluate(t)
+    history = [(t, F)]
+    iterations = 0
+    while abs(F) >= tol and iterations < max_iter:
+        if not np.isfinite(F) or not np.isfinite(dF) or dF == 0:
+            break
+        t = t - F / dF
+        F, dF, x, w = evaluate(t)
+        history.append((t, F))
+        iterations += 1
+    return _result(x, w, t, iterations, bool(abs(F) < tol), history)
