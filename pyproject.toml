@@ -1,0 +1,19 @@
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "bvp"
+version = "0.1.0"
+description = "Shooting methods for two-point boundary value problems"
+readme = "README.md"
+requires-python = ">=3.10"
+license = { text = "MIT" }
+dependencies = ["numpy"]
+
+[project.optional-dependencies]
+notebooks = ["scipy", "matplotlib", "jupyter"]
+test = ["pytest"]
+
+[tool.setuptools]
+packages = ["bvp"]
