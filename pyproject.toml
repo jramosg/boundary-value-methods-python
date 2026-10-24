@@ -3,16 +3,27 @@ requires = ["setuptools>=61"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "bvp"
-version = "0.1.0"
-description = "Shooting methods for two-point boundary value problems"
+name = "boundary-value-methods"
+version = "0.2.0"
+description = "Learn boundary value problems in Python: shooting, finite differences, Newton and tridiagonal Crout"
 readme = "README.md"
 requires-python = ">=3.10"
 license = { text = "MIT" }
+keywords = ["boundary-value-problems", "finite-differences", "shooting-method", "numerical-analysis", "robin-boundary-conditions", "newton-method"]
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "Topic :: Scientific/Engineering :: Mathematics",
+    "Intended Audience :: Education",
+]
 dependencies = ["numpy"]
 
+[project.urls]
+Repository = "https://github.com/jramosg/boundary-value-methods-python"
+Documentation = "https://metodosnumericos.jonramos.dev/en/articulos/frontera-diferencias-finitas/"
+Issues = "https://github.com/jramosg/boundary-value-methods-python/issues"
+
 [project.optional-dependencies]
-notebooks = ["scipy", "matplotlib", "jupyter"]
+notebooks = ["scipy", "matplotlib", "pandas", "jupyter"]
 test = ["pytest"]
 
 [tool.setuptools]
